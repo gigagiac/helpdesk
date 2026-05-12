@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>El Martillo — Admin Dashboard</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, sans-serif; background: #f5f4f0; min-height: 100vh; padding: 2rem 1.5rem; color: #1a1a1a; }
+
+  .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand-icon { width: 38px; height: 38px; background: #1a1a1a; border-radius: 9px; display: flex; align-items: center; justify-content: center; }
+  .brand-icon svg { width: 20px; height: 20px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .brand-name { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; }
+  .brand-sub { font-size: 11px; color: #777; margin-top: 2px; }
+  .back-link { font-size: 13px; color: #555; text-decoration: none; border: 1px solid #ddd; border-radius: 7px; padding: 6px 12px; background: #fff; }
+  .back-link:hover { background: #f0f0f0; }
+
+  .page-title { font-size: 22px; font-weight: 600; margin-bottom: 1.25rem; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+  .stat { background: #fff; border-radius: 10px; border: 1px solid #e8e8e8; padding: 14px 16px; }
+  .stat-label { font-size: 12px; color: #888; margin-bottom: 4px; }
+  .stat-value { font-size: 24px; font-weight: 600; }
+
+  .card { background: #fff; border-radius: 12px; border: 1px solid #e8e8e8; padding: 1.25rem; }
+
+  .filters { display: flex; gap: 8px; margin-bottom: 1rem; align-items: center; flex-wrap: wrap; }
+  .filter-label { font-size: 13px; color: #888; }
+  select, input[type="text"] { font-family: inherit; font-size: 13px; border: 1px solid #ddd; border-radius: 7px; padding: 7px 10px; background: #fafafa; color: #1a1a1a; outline: none; }
+  select:focus, input[type="text"]:focus { border-color: #1a1a1a; }
+  input[type="text"] { flex: 1; min-width: 160px; }
+
+  .ticket-table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+  .ticket-table th { text-align: left; padding: 8px 10px; font-weight: 500; font-size: 12px; color: #888; border-bottom: 1px solid #eee; }
+  .ticket-table td { padding: 11px 10px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
+  .ticket-table tr:last-child td { border-bottom: none; }
+  .ticket-table tr:hover td { background: #fafafa; }
+  .ticket-table th:nth-child(1), .ticket-table td:nth-child(1) { width: 60px; }
+  .ticket-table th:nth-child(2), .ticket-table td:nth-child(2) { width: 150px; }
+  .ticket-table th:nth-child(3), .ticket-table td:nth-child(3) { width: auto; }
+  .ticket-table th:nth-child(4), .ticket-table td:nth-child(4) { width: 90px; }
+  .ticket-table th:nth-child(5), .ticket-table td:nth-child(5) { width: 110px; }
+  .ticket-table th:nth-child(6), .ticket-table td:nth-child(6) { width: 96px; }
+
+  .ticket-id { font-size: 12px; color: #aaa; font-weight: 500; }
+  .td-name { font-weight: 500; font-size: 13px; }
+  .td-contact { font-size: 12px; color: #888; margin-top: 1px; }
+  .td-desc { color: #777; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+  .badge-low      { background: #EAF3DE; color: #3B6D11; }
+  .badge-medium   { background: #FAEEDA; color: #854F0B; }
+  .badge-high     { background: #FAECE7; color: #993C1D; }
+  .badge-critical { background: #FCEBEB; color: #A32D2D; }
+  .badge-open     { background: #E6F1FB; color: #185FA5; }
+  .badge-progress { background: #FAEEDA; color: #854F0B; }
+  .badge-resolved { background: #EAF3DE; color: #3B6D11; }
+
+  .status-sel { font-size: 12px; font-family: inherit; border: 1px solid #ddd; border-radius: 6px; padding: 4px 7px; background: #fafafa; color: #1a1a1a; cursor: pointer; width: 100%; }
+
+  .empty { padding: 3rem; text-align: center; color: #aaa; font-size: 14px; }
+  .empty-icon { font-size: 32px; display: block; margin-bottom: 10px; }
+
+  .refresh-btn { font-size: 13px; font-family: inherit; border: 1px solid #ddd; border-radius: 7px; padding: 6px 12px; background: #fff; cursor: pointer; color: #555; }
+  .refresh-btn:hover { background: #f0f0f0; }
+
+  @media (max-width: 640px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .ticket-table th:nth-child(3), .ticket-table td:nth-child(3),
+    .ticket-table th:nth-child(6), .ticket-table td:nth-child(6) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 24 24"><path d="M15 4l5 5-9.5 9.5-3 .5.5-3L15 4z"/><path d="M14 5l5 5"/></svg>
+    </div>
+    <div>
+      <div class="brand-name">El Martillo</div>
+      <div class="brand-sub">Admin Dashboard</div>
+    </div>
+  </div>
+  <a href="index.html" class="back-link">← Client form</a>
+</div>
+
+<h1 class="page-title">Tickets</h1>
+
+<div class="stats" id="stats-row"></div>
+
+<div class="card">
+  <div class="filters">
+    <span class="filter-label">Filter:</span>
+    <select id="fil-status" onchange="renderTable()">
+      <option value="">All statuses</option>
+      <option value="Open">Open</option>
+      <option value="In progress">In progress</option>
+      <option value="Resolved">Resolved</option>
+    </select>
+    <select id="fil-urgency" onchange="renderTable()">
+      <option value="">All urgencies</option>
+      <option value="critical">Critical</option>
+      <option value="high">High</option>
+      <option value="medium">Medium</option>
+      <option value="low">Low</option>
+    </select>
+    <input type="text" id="fil-search" placeholder="Search by name or issue…" oninput="renderTable()" />
+    <button class="refresh-btn" onclick="loadAndRender()">↻ Refresh</button>
+  </div>
+
+  <div style="overflow-x: auto;">
+    <table class="ticket-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Client</th>
+          <th>Issue</th>
+          <th>Urgency</th>
+          <th>Status</th>
+          <th>Submitted</th>
+        </tr>
+      </thead>
+      <tbody id="ticket-tbody"></tbody>
+    </table>
+    <div id="empty-state" class="empty" style="display:none;">
+      <span class="empty-icon">📭</span>
+      No tickets found
+    </div>
+  </div>
+</div>
+
+<script>
+  const SAMPLE = [
+    { id:'TK-001', name:'Maria Gomez',   phone:'+1 555 234 5678',   email:'maria@acme.com',     desc:'Cannot log into the CRM portal — getting a 403 error on every attempt since yesterday morning.', urgency:'critical', status:'Open',        date:'2026-05-12' },
+    { id:'TK-002', name:'Tom Baxter',    phone:'+44 7700 900123',   email:'tom.b@techco.io',    desc:'Email sync has stopped working on Outlook. Sent items not appearing.',                            urgency:'high',     status:'In progress', date:'2026-05-11' },
+    { id:'TK-003', name:'Priya Nair',    phone:'+91 98765 43210',   email:'priya@startupx.in',  desc:'Printer on floor 2 is offline. Tried restarting, did not help.',                                 urgency:'low',      status:'Open',        date:'2026-05-11' },
+    { id:'TK-004', name:'Leo Fontaine',  phone:'+33 6 12 34 56 78', email:'leo.f@corp.fr',      desc:'VPN keeps disconnecting every 10–15 minutes during video calls.',                                urgency:'medium',   status:'Resolved',    date:'2026-05-10' },
+  ];
+
+  let tickets = [];
+
+  function loadAndRender() {
+    const stored = localStorage.getItem('em_tickets');
+    tickets = stored ? JSON.parse(stored) : [...SAMPLE];
+    if (!stored) localStorage.setItem('em_tickets', JSON.stringify(SAMPLE));
+    renderStats();
+    renderTable();
+  }
+
+  function saveTickets() {
+    localStorage.setItem('em_tickets', JSON.stringify(tickets));
+  }
+
+  function renderStats() {
+    const total  = tickets.length;
+    const open   = tickets.filter(t => t.status === 'Open').length;
+    const inprog = tickets.filter(t => t.status === 'In progress').length;
+    const crit   = tickets.filter(t => t.urgency === 'critical').length;
+    document.getElementById('stats-row').innerHTML = [
+      { label: 'Total tickets', value: total },
+      { label: 'Open',          value: open  },
+      { label: 'In progress',   value: inprog},
+      { label: 'Critical',      value: crit  },
+    ].map(r => `<div class="stat"><div class="stat-label">${r.label}</div><div class="stat-value">${r.value}</div></div>`).join('');
+  }
+
+  function renderTable() {
+    const fs = document.getElementById('fil-status').value;
+    const fu = document.getElementById('fil-urgency').value;
+    const fq = document.getElementById('fil-search').value.toLowerCase();
+    const filtered = tickets.filter(t => {
+      if (fs && t.status !== fs) return false;
+      if (fu && t.urgency !== fu) return false;
+      if (fq && !t.name.toLowerCase().includes(fq) && !t.desc.toLowerCase().includes(fq)) return false;
+      return true;
+    });
+    const tbody = document.getElementById('ticket-tbody');
+    const empty = document.getElementById('empty-state');
+    if (!filtered.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+    tbody.innerHTML = filtered.map(t => `
+      <tr>
+        <td class="ticket-id">${t.id}</td>
+        <td>
+          <div class="td-name">${t.name}</div>
+          <div class="td-contact">${t.email}</div>
+          <div class="td-contact">${t.phone}</div>
+        </td>
+        <td><div class="td-desc" title="${t.desc}">${t.desc}</div></td>
+        <td><span class="badge badge-${t.urgency}">${t.urgency.charAt(0).toUpperCase()+t.urgency.slice(1)}</span></td>
+        <td>
+          <select class="status-sel" onchange="changeStatus('${t.id}', this.value)">
+            <option ${t.status==='Open'        ?'selected':''}>Open</option>
+            <option ${t.status==='In progress' ?'selected':''}>In progress</option>
+            <option ${t.status==='Resolved'    ?'selected':''}>Resolved</option>
+          </select>
+        </td>
+        <td style="font-size:12px; color:#aaa;">${t.date}</td>
+      </tr>`).join('');
+  }
+
+  function changeStatus(id, newStatus) {
+    const t = tickets.find(t => t.id === id);
+    if (t) { t.status = newStatus; saveTickets(); renderStats(); }
+  }
+
+  loadAndRender();
+</script>
+</body>
+</html>
